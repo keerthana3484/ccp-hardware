@@ -1,0 +1,8 @@
+# Tell GitHub Pages to ignore backend development folders and configs
+exclude:
+  - server
+  - dist
+  - tsconfig.json
+  - package.json
+  - package-lock.json
+  - node_modules
