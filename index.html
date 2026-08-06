@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartDispenser IoT Simulator Dashboard</title>
+  
+  <!-- Modern Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* Premium CSS Variables / Design System Tokens */
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0b0f19 0%, #111827 100%);
+      --card-bg: rgba(30, 41, 59, 0.45);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --accent-teal: #0d9488;
+      --accent-teal-glow: rgba(13, 148, 136, 0.45);
+      --accent-amber: #d97706;
+      --accent-amber-glow: rgba(217, 119, 6, 0.35);
+      --accent-coral: #ef4444;
+      --accent-coral-glow: rgba(239, 68, 68, 0.35);
+      --accent-emerald: #10b981;
+      --accent-emerald-glow: rgba(16, 185, 129, 0.35);
+      
+      --font-sans: 'Inter', sans-serif;
+      --font-display: 'Outfit', sans-serif;
+      --font-mono: 'Fira Code', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0,0,0,0.2);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.1);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    /* Container */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+      width: 100%;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    /* Header */
+    header {
+      background: rgba(17, 24, 39, 0.8);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--card-border);
+      padding: 1.25rem 2rem;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .status-dot-outer {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      position: relative;
+    }
+
+    .status-dot-inner {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--accent-emerald);
+      box-shadow: 0 0 12px var(--accent-emerald-glow);
+      transition: background-color 0.3s, box-shadow 0.3s;
+    }
+
+    .status-dot-inner.offline {
+      background: var(--text-muted);
+      box-shadow: none;
+    }
+
+    .brand-title {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+    }
+
+    .brand-title span {
+      color: var(--accent-amber);
+      font-style: italic;
+      font-weight: 600;
+    }
+
+    .brand-tagline {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-top: 0.1rem;
+    }
+
+    .deployment-badge {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid var(--accent-emerald);
+      color: var(--accent-emerald);
+      padding: 0.4rem 0.8rem;
+      border-radius: 9999px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Warning Banner */
+    .banner {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid var(--accent-coral);
+      color: var(--text-main);
+      padding: 1rem 1.5rem;
+      border-radius: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.875rem;
+      font-family: var(--font-sans);
+    }
+
+    .banner.amber {
+      background: rgba(217, 119, 6, 0.15);
+      border: 1px solid var(--accent-amber);
+    }
+
+    .banner-icon {
+      font-size: 1.25rem;
+      animation: pulse 2s infinite;
+    }
+
+    /* Dashboard Telemetry Cards Grid */
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .telemetry-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid var(--card-border);
+      border-radius: 1.25rem;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 120px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .telemetry-card:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+      transform: translateY(-2px);
+    }
+
+    .telemetry-title {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+    }
+
+    .telemetry-value-container {
+      display: flex;
+      align-items: flex-end;
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+    }
+
+    .telemetry-value {
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      font-weight: 700;
+      font-style: italic;
+      line-height: 1;
+    }
+
+    .telemetry-meta {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+
+    /* Battery Graphic */
+    .battery-graphic {
+      width: 42px;
+      height: 20px;
+      border: 2px solid var(--text-main);
+      border-radius: 4px;
+      padding: 2px;
+      display: flex;
+      position: relative;
+      margin-bottom: 2px;
+      flex-shrink: 0;
+    }
+
+    .battery-level {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--accent-emerald);
+      transition: width 0.3s, background-color 0.3s;
+    }
+
+    .battery-level.critical {
+      background: var(--accent-coral);
+      animation: pulse 1s infinite;
+    }
+
+    .battery-tip {
+      width: 3px;
+      height: 8px;
+      background: var(--text-main);
+      position: absolute;
+      right: -5px;
+      top: 4px;
+      border-radius: 0 2px 2px 0;
+    }
+
+    /* Wifi Graphic */
+    .wifi-graphic {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 22px;
+      margin-bottom: 2px;
+    }
+
+    .wifi-bar {
+      width: 3px;
+      border-radius: 2px 2px 0 0;
+      background: rgba(255, 255, 255, 0.15);
+      transition: background-color 0.3s;
+    }
+
+    .wifi-bar.active {
+      background: var(--accent-emerald);
+    }
+
+    .wifi-bar:nth-child(1) { height: 20%; }
+    .wifi-bar:nth-child(2) { height: 40%; }
+    .wifi-bar:nth-child(3) { height: 60%; }
+    .wifi-bar:nth-child(4) { height: 80%; }
+    .wifi-bar:nth-child(5) { height: 100%; }
+
+    /* Compartments Grid */
+    .compartments-title {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 700;
+      font-style: italic;
+      margin-top: 1rem;
+      margin-bottom: -0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .compartments-title::after {
+      content: '';
+      flex-grow: 1;
+      height: 1px;
+      background: var(--card-border);
+    }
+
+    .compartments-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 768px) {
+      .compartments-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    .compartment-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid var(--card-border);
+      border-radius: 2rem;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 1.5rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.3s;
+    }
+
+    .compartment-card.stale-opacity {
+      opacity: 0.6;
+    }
+
+    .compartment-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .compartment-meta {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+    }
+
+    .compartment-name {
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 700;
+      font-style: italic;
+      color: var(--text-main);
+      margin-top: 0.25rem;
+    }
+
+    .compartment-med-id {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      margin-top: 0.1rem;
+    }
+
+    /* State Badges */
+    .state-badge {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.4rem 0.8rem;
+      border-radius: 0.75rem;
+      border: 1px solid transparent;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .state-badge.locked {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.15);
+      color: var(--text-muted);
+    }
+
+    .state-badge.awaiting-meal {
+      background: rgba(217, 119, 6, 0.15);
+      border-color: var(--accent-amber);
+      color: var(--accent-amber);
+    }
+
+    .state-badge.available {
+      background: var(--accent-teal);
+      color: var(--text-main);
+      box-shadow: 0 0 15px var(--accent-teal-glow);
+      animation: pulse 2s infinite;
+    }
+
+    .state-badge.dispensed {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .state-badge.empty {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: var(--accent-coral);
+      color: var(--accent-coral);
+      font-weight: 800;
+    }
+
+    /* Sensor Metrics Panel */
+    .sensor-metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 1rem 1.25rem;
+      border-radius: 1.25rem;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    .sensor-metric-label {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .sensor-metric-val {
+      font-family: var(--font-sans);
+      font-size: 0.875rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-top: 0.15rem;
+    }
+
+    /* Action Shortcuts */
+    .compartment-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .btn {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+      flex-grow: 1;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-amber {
+      background: var(--accent-amber);
+      color: #000;
+    }
+    .btn-amber:hover {
+      background: #f59e0b;
+      box-shadow: 0 0 10px rgba(217, 119, 6, 0.3);
+    }
+
+    .btn-teal {
+      background: var(--accent-teal);
+      color: var(--text-main);
+    }
+    .btn-teal:hover {
+      background: #0f766e;
+      box-shadow: 0 0 12px rgba(13, 148, 136, 0.3);
+    }
+
+    /* Demo Overrides Tool Block */
+    .overrides-section {
+      border: 2px dashed var(--accent-amber);
+      background: rgba(217, 119, 6, 0.03);
+      border-radius: 2rem;
+      padding: 2rem;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+    }
+
+    .overrides-badge {
+      position: absolute;
+      top: -14px;
+      left: 2rem;
+      background: var(--accent-amber);
+      color: #000;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.3rem 0.8rem;
+      border-radius: 9999px;
+      letter-spacing: 0.05em;
+      border: 1px solid #000;
+    }
+
+    .overrides-description {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .overrides-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 992px) {
+      .overrides-grid {
+        grid-template-columns: 1fr 1.2fr 1.2fr;
+      }
+    }
+
+    .override-group {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 1.25rem;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .override-group-title {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+
+    .btn-override {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 0.65rem 1rem;
+      border-radius: 0.75rem;
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background-color 0.2s, border-color 0.2s;
+    }
+
+    .btn-override:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-override:active {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    /* Terminal Console and Sandbox Split Grid */
+    .terminal-sandbox-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 992px) {
+      .terminal-sandbox-grid {
+        grid-template-columns: 1.2fr 1fr;
+      }
+    }
+
+    /* Terminal Console Section */
+    .terminal-container {
+      background: #05070c;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1.5rem;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      height: 380px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    }
+
+    .terminal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .terminal-dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .terminal-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+    .td-red { background: #ef4444; }
+    .td-yellow { background: #f59e0b; }
+    .td-green { background: #10b981; }
+
+    .terminal-title {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .terminal-clear {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+    }
+    .terminal-clear:hover {
+      color: var(--text-main);
+    }
+
+    .terminal-body {
+      flex-grow: 1;
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      padding-right: 0.5rem;
+    }
+
+    .terminal-line {
+      line-height: 1.4;
+      word-break: break-all;
+    }
+
+    .terminal-line .timestamp {
+      color: var(--text-muted);
+      margin-right: 0.5rem;
+    }
+
+    .terminal-line.info .tag {
+      color: #60a5fa;
+      font-weight: bold;
+    }
+    .terminal-line.sensor .tag {
+      color: var(--accent-emerald);
+      font-weight: bold;
+    }
+    .terminal-line.state .tag {
+      color: var(--accent-amber);
+      font-weight: bold;
+    }
+    .terminal-line.error .tag {
+      color: var(--accent-coral);
+      font-weight: bold;
+    }
+
+    /* REST API Sandbox Console */
+    .sandbox-container {
+      background: #0a0d14;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 1.5rem;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      height: 380px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    }
+
+    .sandbox-header {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 0.75rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sandbox-title {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .sandbox-http-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+    }
+
+    .sandbox-http-method {
+      background: var(--accent-teal);
+      color: #fff;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    .sandbox-http-path {
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    .sandbox-body {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .sandbox-label {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 0.2rem;
+    }
+
+    .sandbox-payload-box {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 0.75rem;
+      padding: 0.75rem;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: #38bdf8;
+      overflow-y: auto;
+      flex-grow: 1;
+      max-height: 120px;
+      white-space: pre-wrap;
+    }
+
+    .sandbox-response-box {
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 0.75rem;
+      padding: 0.75rem;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: #a7f3d0;
+      overflow-y: auto;
+      flex-grow: 1;
+      max-height: 120px;
+      white-space: pre-wrap;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--card-border);
+      padding: 1.5rem;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      background: rgba(11, 15, 25, 0.8);
+      margin-top: auto;
+    }
+
+    /* Keyframe Animations */
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+        box-shadow: 0 0 10px var(--accent-teal-glow);
+      }
+      50% {
+        opacity: 0.6;
+        box-shadow: 0 0 4px var(--accent-teal-glow);
+      }
+    }
+
+    @keyframes warningPulse {
+      0%, 100% {
+        border-color: var(--accent-coral);
+        box-shadow: 0 0 4px var(--accent-coral-glow);
+      }
+      50% {
+        border-color: rgba(239, 68, 68, 0.2);
+        box-shadow: none;
+      }
+    }
+
+    .critical-battery-card {
+      animation: warningPulse 1.5s infinite;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Web Application Header -->
+  <header>
+    <div class="brand-section">
+      <div class="status-dot-outer">
+        <div id="connection-dot" class="status-dot-inner"></div>
+      </div>
+      <div>
+        <h1 class="brand-title">SmartDispenser <span>IoT Simulator</span></h1>
+        <p class="brand-tagline">// Virtual Hardware Client & Engine</p>
+      </div>
+    </div>
+    
+    <div class="deployment-badge">
+      <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981;"></span>
+      GitHub Pages Ready
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="container">
+
+    <!-- Active Error/Warning Banners -->
+    <div id="alert-banner-container" style="display: flex; flex-direction: column; gap: 0.75rem;">
+      <!-- Dynamic banners will render here -->
+    </div>
+
+    <!-- Telemetry Cards Grid -->
+    <div class="telemetry-grid">
+      
+      <!-- Telemetry State Card -->
+      <div class="telemetry-card" id="telemetry-status-card">
+        <span class="telemetry-title">Telemetry State</span>
+        <div class="telemetry-value-container">
+          <span class="telemetry-value" id="val-telemetry-state">Online</span>
+        </div>
+        <span class="telemetry-meta" id="val-last-seen">Last Seen: Just Now</span>
+      </div>
+
+      <!-- Battery Level Card -->
+      <div class="telemetry-card" id="battery-status-card">
+        <span class="telemetry-title">Battery Level</span>
+        <div class="telemetry-value-container" style="justify-content: space-between; align-items: center;">
+          <span class="telemetry-value" id="val-battery-pct">100%</span>
+          <div class="battery-graphic">
+            <div id="battery-level-bar" class="battery-level" style="width: 100%;"></div>
+            <div class="battery-tip"></div>
+          </div>
+        </div>
+        <span class="telemetry-meta" id="val-battery-state">Telemetry OK</span>
+      </div>
+
+      <!-- Wifi Signal Card -->
+      <div class="telemetry-card" id="wifi-status-card">
+        <span class="telemetry-title">WiFi Signal</span>
+        <div class="telemetry-value-container" style="justify-content: space-between; align-items: center;">
+          <span class="telemetry-value" id="val-wifi-pct">95%</span>
+          <div class="wifi-graphic">
+            <div class="wifi-bar active"></div>
+            <div class="wifi-bar active"></div>
+            <div class="wifi-bar active"></div>
+            <div class="wifi-bar active"></div>
+            <div class="wifi-bar active"></div>
+          </div>
+        </div>
+        <span class="telemetry-meta" id="val-wifi-rssi">RSSI: -36 dBm</span>
+      </div>
+
+      <!-- Firmware Card -->
+      <div class="telemetry-card">
+        <span class="telemetry-title">Firmware</span>
+        <div class="telemetry-value-container">
+          <span class="telemetry-value">1.0.0-web</span>
+        </div>
+        <span class="telemetry-meta">Mongoose OS Build</span>
+      </div>
+
+      <!-- Synchronized RTC Clock Card -->
+      <div class="telemetry-card">
+        <span class="telemetry-title">Device RTC Time</span>
+        <div class="telemetry-value-container">
+          <span class="telemetry-value" id="val-rtc-time" style="color: var(--accent-teal); font-weight: bold;">00:00:00</span>
+        </div>
+        <span class="telemetry-meta" id="val-rtc-date">Date: 2026-08-06</span>
+      </div>
+
+    </div>
+
+    <!-- Compartments Title -->
+    <div class="compartments-title">
+      Compartments Overview
+    </div>
+
+    <!-- Compartments Visual Grid -->
+    <div class="compartments-grid">
+      
+      <!-- Compartment 1 -->
+      <div class="compartment-card" id="comp-card-1">
+        <div class="compartment-header">
+          <div>
+            <span class="compartment-meta">Slot #1 (Requires Food)</span>
+            <h3 class="compartment-name">Metformin 500mg</h3>
+            <span class="compartment-med-id">ID: 6a749f1838573ffa2d803109</span>
+          </div>
+          <div id="comp-badge-1" class="state-badge locked">Locked</div>
+        </div>
+
+        <div class="sensor-metrics">
+          <div>
+            <span class="sensor-metric-label">Load Cell Reading</span>
+            <div class="sensor-metric-val" id="comp-weight-1">15.0g</div>
+          </div>
+          <div>
+            <span class="sensor-metric-label">Last IR Access</span>
+            <div class="sensor-metric-val" id="comp-ir-1">No Access Logs</div>
+          </div>
+        </div>
+
+        <div class="compartment-actions">
+          <button id="btn-meal-1" class="btn btn-amber" style="display: none;" onclick="patientConfirmMeal(1)">
+            Confirm Meal Intake
+          </button>
+          <button id="btn-take-1" class="btn btn-teal" style="display: none;" onclick="patientTakeMedicine(1)">
+            Mark Taken
+          </button>
+        </div>
+      </div>
+
+      <!-- Compartment 2 -->
+      <div class="compartment-card" id="comp-card-2">
+        <div class="compartment-header">
+          <div>
+            <span class="compartment-meta">Slot #2 (No Food Required)</span>
+            <h3 class="compartment-name">Ibuprofen 400mg</h3>
+            <span class="compartment-med-id">ID: 6a749f1838573ffa2d80310a</span>
+          </div>
+          <div id="comp-badge-2" class="state-badge locked">Locked</div>
+        </div>
+
+        <div class="sensor-metrics">
+          <div>
+            <span class="sensor-metric-label">Load Cell Reading</span>
+            <div class="sensor-metric-val" id="comp-weight-2">10.0g</div>
+          </div>
+          <div>
+            <span class="sensor-metric-label">Last IR Access</span>
+            <div class="sensor-metric-val" id="comp-ir-2">No Access Logs</div>
+          </div>
+        </div>
+
+        <div class="compartment-actions">
+          <button id="btn-take-2" class="btn btn-teal" style="display: none;" onclick="patientTakeMedicine(2)">
+            Mark Taken
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Demo Overrides Panel -->
+    <div class="overrides-section">
+      <div class="overrides-badge">DEMO TOOL // DEVELOPER OVERRIDES</div>
+      <p class="overrides-description">
+        Use these controls to simulate hardware sensors, scheduled timer alerts, and connection disruptions. These events directly hit the Mongoose state transition logic to demonstrate how the ESP32 firmware drives the database states.
+      </p>
+
+      <div class="overrides-grid">
+        
+        <!-- Group A: Telemetry Overrides -->
+        <div class="override-group">
+          <div class="override-group-title">Telemetry Simulation</div>
+          <button class="btn-override" onclick="triggerTelemetryOverride('LOW_BATTERY_DEMO')">
+            <span>Trigger Low Battery (&lt; 15%)</span>
+            <span>🔋</span>
+          </button>
+          <button class="btn-override" onclick="triggerTelemetryOverride('RECHARGE')">
+            <span>Recharge Battery (100%)</span>
+            <span>⚡</span>
+          </button>
+          <button class="btn-override" onclick="triggerTelemetryOverride('OFFLINE_TOGGLE')">
+            <span>Toggle Online/Offline Status</span>
+            <span>📡</span>
+          </button>
+        </div>
+
+        <!-- Group B: Compartment 1 Overrides -->
+        <div class="override-group">
+          <div class="override-group-title">Compartment 1 (Requires Meal)</div>
+          <button class="btn-override" onclick="triggerStateEvent(1, 'REMINDER_FIRED_WITH_MEAL')">
+            <span>⏰ Fire Reminder (Awaiting Meal)</span>
+          </button>
+          <button class="btn-override" onclick="triggerStateEvent(1, 'MEAL_CONFIRMED')">
+            <span>🍳 Confirm Meal Event</span>
+          </button>
+          <button class="btn-override" onclick="triggerStateEvent(1, 'TIMEOUT')">
+            <span>⏳ Acknowledge Timeout</span>
+          </button>
+          <button class="btn-override" onclick="triggerStateEvent(1, 'IR_EVENT')">
+            <span>🚨 Simulate Unscheduled Access</span>
+          </button>
+          <button class="btn-override" onclick="triggerStateEvent(1, 'RESTOCK')">
+            <span>📦 Restock Compartment (Load 15g)</span>
+          </button>
+        </div>
+
+        <!-- Group C: Compartment 2 Overrides -->
+        <div class="override-group">
+          <div class="override-group-title">Compartment 2 (No Meal)</div>
+          <button class="btn-override" onclick="triggerStateEvent(2, 'REMINDER_FIRED_NO_MEAL')">
+            <span>⏰ Fire Reminder (Unlock Ready)</span>
+          </button>
+          <button class="btn-override" onclick="triggerStateEvent(2, 'TIMEOUT')">
+            <span>⏳ Acknowledge Timeout</span>
+          </button>
+          <button class="btn-override" onclick="triggerStateEvent(2, 'IR_EVENT')">
+            <span>📸 Post IR Access Event</span>
+          </button>
+          <button class="btn-override" onclick="triggerStateEvent(2, 'LOAD_CELL_DROP')">
+            <span>⚖️ Weight drops to 0g (Empty)</span>
+          </button>
+          <button class="btn-override" onclick="triggerStateEvent(2, 'RESTOCK')">
+            <span>📦 Restock Compartment (Load 10g)</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Terminal & REST Sandbox Grid -->
+    <div class="terminal-sandbox-grid">
+      
+      <!-- Terminal Console -->
+      <div class="terminal-container">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <div class="terminal-dot td-red"></div>
+            <div class="terminal-dot td-yellow"></div>
+            <div class="terminal-dot td-green"></div>
+          </div>
+          <div class="terminal-title">System Activity Log</div>
+          <button class="terminal-clear" onclick="clearConsole()">Clear</button>
+        </div>
+        <div id="terminal-console" class="terminal-body">
+          <!-- Log lines printed by JavaScript -->
+        </div>
+      </div>
+
+      <!-- API Contract Sandbox -->
+      <div class="sandbox-container">
+        <div class="sandbox-header">
+          <div class="sandbox-title">API Contract Sandbox</div>
+          <div class="sandbox-http-indicator">
+            <span id="sandbox-method" class="sandbox-http-method">POST</span>
+            <span id="sandbox-path" class="sandbox-http-path">/api/v1/device/DEV-SIM-001/status</span>
+          </div>
+        </div>
+        <div class="sandbox-body">
+          <div>
+            <div class="sandbox-label">HTTP Telemetry Request Payload</div>
+            <div id="sandbox-payload" class="sandbox-payload-box">// Waiting for simulated HTTP trigger...</div>
+          </div>
+          <div>
+            <div class="sandbox-label">Server Response (Mongoose Sync)</div>
+            <div id="sandbox-response" class="sandbox-response-box">// Waiting for simulated HTTP trigger...</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Web Application Footer -->
+  <footer>
+    © 2026 SmartDispenser Project Dashboard // Node.js Simulator Core client port
+  </footer>
+
+  <script>
+    // State machine, state representation and transition matrix.
+    const deviceState = {
+      deviceId: "DEV-SIM-001",
+      online: true,
+      batteryPercent: 100,
+      wifiSignalPercent: 95,
+      lastSeenAt: new Date(),
+      compartments: [
+        {
+          compartmentNumber: 1,
+          linkedMedicineId: "6a749f1838573ffa2d803109",
+          state: "locked",
+          lastLoadCellReading: 15.0,
+          lastIrEventAt: null
+        },
+        {
+          compartmentNumber: 2,
+          linkedMedicineId: "6a749f1838573ffa2d80310a",
+          state: "locked",
+          lastLoadCellReading: 10.0,
+          lastIrEventAt: null
+        }
+      ]
+    };
+
+    // Keep unique alarms in UI
+    const activeAlarms = new Set();
+
+    // Init function
+    window.onload = function() {
+      logMessage("INFO", "Device simulation engine initialized.");
+      logMessage("INFO", "Mock IoT device seeded: DEV-SIM-001.");
+      logMessage("INFO", "Ready to process telemetry and state transactions.");
+      
+      updateRTC();
+      setInterval(updateRTC, 1000);
+      
+      // Periodically trigger mock heartbeat telemetry every 15s (if online)
+      setInterval(runHeartbeatPoll, 15000);
+
+      renderDeviceDashboard();
+    };
+
+    // Synced clock ticks
+    function updateRTC() {
+      const now = new Date();
+      document.getElementById('val-rtc-time').textContent = now.toLocaleTimeString();
+      document.getElementById('val-rtc-date').textContent = "Date: " + now.toISOString().slice(0, 10);
+    }
+
+    // Terminal Logging
+    function logMessage(type, content) {
+      const consoleEl = document.getElementById('terminal-console');
+      const timeStr = new Date().toLocaleTimeString();
+      
+      const line = document.createElement('div');
+      line.className = `terminal-line ${type.toLowerCase()}`;
+      
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'timestamp';
+      timeSpan.textContent = `[${timeStr}]`;
+      
+      const tagSpan = document.createElement('span');
+      tagSpan.className = 'tag';
+      tagSpan.textContent = `[${type}] `;
+      
+      const contentSpan = document.createElement('span');
+      contentSpan.textContent = content;
+      
+      line.appendChild(timeSpan);
+      line.appendChild(tagSpan);
+      line.appendChild(contentSpan);
+      
+      consoleEl.appendChild(line);
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    function clearConsole() {
+      document.getElementById('terminal-console').innerHTML = '';
+    }
+
+    // Live Heartbeat Simulation
+    function runHeartbeatPoll() {
+      if (!deviceState.online) return;
+      
+      // Deduct minor battery/wifi fluctuations
+      if (deviceState.batteryPercent > 12) {
+        deviceState.batteryPercent = Math.max(12, +(deviceState.batteryPercent - 0.1).toFixed(1));
+      }
+      deviceState.lastSeenAt = new Date();
+      
+      logMessage("INFO", `Telemetry Update: Online: true | Battery: ${deviceState.batteryPercent}% | Wi-Fi: ${deviceState.wifiSignalPercent}% | LastSeen: ${deviceState.lastSeenAt.toLocaleTimeString()}`);
+      
+      // Update sandbox HTTP block
+      renderSandboxRequest(
+        "POST", 
+        `/api/v1/device/${deviceState.deviceId}/heartbeat`,
+        {
+          batteryPercent: deviceState.batteryPercent,
+          wifiSignalPercent: deviceState.wifiSignalPercent
+        },
+        {
+          success: true,
+          message: "Heartbeat acknowledged.",
+          online: true,
+          lastSeenAt: deviceState.lastSeenAt.toISOString()
+        }
+      );
+
+      renderDeviceDashboard();
+    }
+
+    // Render HTML components based on current State
+    function renderDeviceDashboard() {
+      // Telemetry card updates
+      const connDot = document.getElementById('connection-dot');
+      const valState = document.getElementById('val-telemetry-state');
+      const valSeen = document.getElementById('val-last-seen');
+      
+      if (deviceState.online) {
+        connDot.className = "status-dot-inner";
+        valState.textContent = "Online";
+        valSeen.textContent = `Last Seen: ${deviceState.lastSeenAt.toLocaleTimeString()}`;
+        document.getElementById('telemetry-status-card').style.opacity = 1;
+        document.getElementById('battery-status-card').style.opacity = 1;
+        document.getElementById('wifi-status-card').style.opacity = 1;
+        document.getElementById('comp-card-1').classList.remove('stale-opacity');
+        document.getElementById('comp-card-2').classList.remove('stale-opacity');
+      } else {
+        connDot.className = "status-dot-inner offline";
+        valState.textContent = "Offline";
+        valSeen.textContent = "Last Seen: Offline link";
+        document.getElementById('telemetry-status-card').style.opacity = 0.6;
+        document.getElementById('battery-status-card').style.opacity = 0.6;
+        document.getElementById('wifi-status-card').style.opacity = 0.6;
+        document.getElementById('comp-card-1').classList.add('stale-opacity');
+        document.getElementById('comp-card-2').classList.add('stale-opacity');
+      }
+
+      // Battery status
+      document.getElementById('val-battery-pct').textContent = `${deviceState.batteryPercent}%`;
+      const batBar = document.getElementById('battery-level-bar');
+      batBar.style.width = `${deviceState.batteryPercent}%`;
+      
+      if (deviceState.batteryPercent < 15) {
+        batBar.className = "battery-level critical";
+        document.getElementById('val-battery-state').textContent = "🔋 CRITICAL LOW BATTERY";
+        document.getElementById('battery-status-card').classList.add('critical-battery-card');
+        addUiAlarm("LOW_BATTERY", `Low Battery Warning: ${deviceState.batteryPercent}% battery remaining.`);
+      } else {
+        batBar.className = "battery-level";
+        document.getElementById('val-battery-state').textContent = "Telemetry OK";
+        document.getElementById('battery-status-card').classList.remove('critical-battery-card');
+        removeUiAlarm("LOW_BATTERY");
+      }
+
+      // Wifi signal
+      document.getElementById('val-wifi-pct').textContent = `${deviceState.wifiSignalPercent}%`;
+      const bars = document.querySelectorAll('.wifi-graphic .wifi-bar');
+      const activeLimit = deviceState.wifiSignalPercent / 20;
+      bars.forEach((bar, index) => {
+        if (deviceState.online && index < activeLimit) {
+          bar.classList.add('active');
+        } else {
+          bar.classList.remove('active');
+        }
+      });
+      const rssiVal = -Math.floor(100 - deviceState.wifiSignalPercent / 1.5);
+      document.getElementById('val-wifi-rssi').textContent = `RSSI: ${deviceState.online ? rssiVal : 0} dBm`;
+
+      // Render compartments
+      deviceState.compartments.forEach(comp => {
+        const num = comp.compartmentNumber;
+        const stateBadge = document.getElementById(`comp-badge-${num}`);
+        const weightEl = document.getElementById(`comp-weight-${num}`);
+        const irEl = document.getElementById(`comp-ir-${num}`);
+        const cardEl = document.getElementById(`comp-card-${num}`);
+        
+        // Remove existing state classes
+        stateBadge.className = "state-badge";
+        
+        // Map states
+        if (comp.state === 'locked') {
+          stateBadge.classList.add('locked');
+          stateBadge.textContent = "Locked / Scheduled";
+          cardEl.style.borderColor = "var(--card-border)";
+        } else if (comp.state === 'unlocked-awaiting-meal') {
+          stateBadge.classList.add('awaiting-meal');
+          stateBadge.textContent = "Awaiting Meal";
+          cardEl.style.borderColor = "var(--accent-amber)";
+        } else if (comp.state === 'available') {
+          stateBadge.classList.add('available');
+          stateBadge.textContent = "Ready to Take";
+          cardEl.style.borderColor = "var(--accent-teal)";
+        } else if (comp.state === 'dispensed') {
+          stateBadge.classList.add('dispensed');
+          stateBadge.textContent = "Taken";
+          cardEl.style.borderColor = "rgba(255,255,255,0.1)";
+        } else if (comp.state === 'empty') {
+          stateBadge.classList.add('empty');
+          stateBadge.textContent = "Empty (Restock)";
+          cardEl.style.borderColor = "var(--accent-coral)";
+          addUiAlarm(`EMPTY_COMP_${num}`, `Compartment ${num} is empty and needs restocking.`);
+        }
+
+        if (comp.state !== 'empty') {
+          removeUiAlarm(`EMPTY_COMP_${num}`);
+        }
+
+        weightEl.textContent = `${comp.lastLoadCellReading.toFixed(1)}g`;
+        irEl.textContent = comp.lastIrEventAt ? new Date(comp.lastIrEventAt).toLocaleTimeString() : 'No Access Logs';
+
+        // Render Action Buttons based on state
+        const mealBtn = document.getElementById(`btn-meal-${num}`);
+        const takeBtn = document.getElementById(`btn-take-${num}`);
+
+        if (mealBtn) {
+          mealBtn.style.display = (deviceState.online && comp.state === 'unlocked-awaiting-meal') ? 'block' : 'none';
+        }
+        if (takeBtn) {
+          takeBtn.style.display = (deviceState.online && (comp.state === 'available' || comp.state === 'unlocked-awaiting-meal')) ? 'block' : 'none';
+        }
+      });
+
+      renderAlarmsList();
+    }
+
+    // State machine engine (transitions implementation)
+    function transitionCompartmentState(compNum, event, payloadVal = null) {
+      const comp = deviceState.compartments.find(c => c.compartmentNumber === compNum);
+      if (!comp) return;
+
+      const oldState = comp.state;
+      let newState = oldState;
+
+      // Transition Rules matching stateTransitions.md
+      if (comp.state === 'locked') {
+        if (event === 'REMINDER_FIRED_WITH_MEAL') {
+          newState = 'unlocked-awaiting-meal';
+        } else if (event === 'REMINDER_FIRED_NO_MEAL') {
+          newState = 'available';
+        }
+      } 
+      
+      else if (comp.state === 'unlocked-awaiting-meal') {
+        if (event === 'MEAL_CONFIRMED') {
+          newState = 'available';
+        } else if (event === 'IR_EVENT' || event === 'LOAD_CELL_DROP') {
+          // Safety override (tamper access)
+          newState = 'dispensed';
+          comp.lastLoadCellReading = 0.05; // Drop weight
+          comp.lastIrEventAt = new Date();
+          logMessage("SENSOR", `Slot ${compNum} weight drop/IR break triggered during meal lock! Safety override activated.`);
+        } else if (event === 'TIMEOUT') {
+          newState = 'locked';
+        }
+      } 
+      
+      else if (comp.state === 'available') {
+        if (event === 'IR_EVENT' || event === 'LOAD_CELL_DROP') {
+          newState = 'dispensed';
+          comp.lastLoadCellReading = 0.05; // Weight drop
+          comp.lastIrEventAt = new Date();
+        } else if (event === 'TIMEOUT') {
+          newState = 'locked';
+        }
+      } 
+      
+      else if (comp.state === 'dispensed') {
+        if (event === 'LOAD_CELL_DROP' || (event === 'RESTOCK' && payloadVal === 0)) {
+          newState = 'empty';
+          comp.lastLoadCellReading = 0.0;
+        } else if (event === 'RESTOCK') {
+          newState = 'locked';
+          comp.lastLoadCellReading = payloadVal || (compNum === 1 ? 15.0 : 10.0);
+        }
+      } 
+      
+      else if (comp.state === 'empty') {
+        if (event === 'RESTOCK') {
+          newState = 'locked';
+          comp.lastLoadCellReading = payloadVal || (compNum === 1 ? 15.0 : 10.0);
+        }
+      }
+
+      if (oldState !== newState) {
+        comp.state = newState;
+        logMessage("STATE", `Slot ${compNum} transition: [${oldState}] -> [${newState}] (Trigger: ${event})`);
+        
+        // Log sensor events to system terminal
+        if (event === 'IR_EVENT') {
+          logMessage("SENSOR", `SensorEvent logged: deviceId: DEV-SIM-001 | slot: ${compNum} | type: 'ir' | value: true`);
+        } else if (event === 'LOAD_CELL_DROP') {
+          logMessage("SENSOR", `SensorEvent logged: deviceId: DEV-SIM-001 | slot: ${compNum} | type: 'loadcell' | value: ${comp.lastLoadCellReading.toFixed(1)}g`);
+        }
+
+        // Post sandbox mock API log
+        renderSandboxRequest(
+          "POST",
+          `/api/v1/device/${deviceState.deviceId}/sensor-event`,
+          {
+            compartmentId: compNum,
+            sensorType: event === 'IR_EVENT' ? 'ir' : 'loadcell',
+            value: event === 'IR_EVENT' ? true : comp.lastLoadCellReading
+          },
+          {
+            success: true,
+            sensorEvent: {
+              deviceId: deviceState.deviceId,
+              compartmentId: compNum,
+              sensorType: event === 'IR_EVENT' ? 'ir' : 'loadcell',
+              value: event === 'IR_EVENT' ? true : comp.lastLoadCellReading
+            },
+            newState: newState
+          }
+        );
+      } else {
+        logMessage("INFO", `No transition for Slot ${compNum} from state [${oldState}] on event [${event}]`);
+      }
+
+      renderDeviceDashboard();
+    }
+
+    // Patient confirmed meal
+    function patientConfirmMeal(compNum) {
+      logMessage("INFO", `Patient confirmed meal intake for compartment #${compNum}`);
+      
+      renderSandboxRequest(
+        "POST",
+        `/api/v1/device/patient/confirm-meal`,
+        { deviceId: deviceState.deviceId, compartmentNumber: compNum },
+        { success: true, message: "Meal intake recorded." }
+      );
+
+      transitionCompartmentState(compNum, 'MEAL_CONFIRMED');
+    }
+
+    // Patient took medicine button
+    function patientTakeMedicine(compNum) {
+      logMessage("INFO", `Patient accessed compartment #${compNum} (simulated pill retrieval)`);
+      
+      renderSandboxRequest(
+        "POST",
+        `/api/v1/device/patient/take-medicine`,
+        { deviceId: deviceState.deviceId, compartmentNumber: compNum },
+        { success: true, message: "Medication access event received." }
+      );
+
+      // Programmatically trigger IR and loadcell events
+      transitionCompartmentState(compNum, 'IR_EVENT');
+      
+      // Triggers weight empty state slightly after
+      setTimeout(() => {
+        transitionCompartmentState(compNum, 'LOAD_CELL_DROP');
+      }, 800);
+    }
+
+    // Developer state event overrides
+    function triggerStateEvent(compNum, event) {
+      if (!deviceState.online) {
+        logMessage("ERROR", `Failed to send event [${event}] to Slot ${compNum}: Device is offline.`);
+        return;
+      }
+      
+      if (event === 'RESTOCK') {
+        const weight = compNum === 1 ? 15.0 : 10.0;
+        transitionCompartmentState(compNum, 'RESTOCK', weight);
+      } else {
+        transitionCompartmentState(compNum, event);
+      }
+    }
+
+    // Telemetry settings overrides
+    function triggerTelemetryOverride(event) {
+      if (event === 'OFFLINE_TOGGLE') {
+        deviceState.online = !deviceState.online;
+        logMessage("STATE", `Device connection status toggled to: ${deviceState.online ? 'Online' : 'Offline'}`);
+      } else if (event === 'LOW_BATTERY_DEMO') {
+        deviceState.batteryPercent = 12;
+        logMessage("STATE", "Low battery state injected (12%).");
+      } else if (event === 'RECHARGE') {
+        deviceState.batteryPercent = 100;
+        logMessage("STATE", "Battery recharged to 100%.");
+      }
+      renderDeviceDashboard();
+    }
+
+    // Render dynamic sandbox HTTP block
+    function renderSandboxRequest(method, path, requestObj, responseObj) {
+      document.getElementById('sandbox-method').textContent = method;
+      document.getElementById('sandbox-path').textContent = path;
+      document.getElementById('sandbox-payload').textContent = JSON.stringify(requestObj, null, 2);
+      document.getElementById('sandbox-response').textContent = JSON.stringify(responseObj, null, 2);
+    }
+
+    // Manage alarms list dynamically
+    function addUiAlarm(key, msg) {
+      if (activeAlarms.has(key)) return;
+      activeAlarms.add(JSON.stringify({ key: key, msg: msg }));
+    }
+
+    function removeUiAlarm(key) {
+      for (let alarmStr of activeAlarms) {
+        const a = JSON.parse(alarmStr);
+        if (a.key === key) {
+          activeAlarms.delete(alarmStr);
+          break;
+        }
+      }
+    }
+
+    function renderAlarmsList() {
+      const container = document.getElementById('alert-banner-container');
+      container.innerHTML = '';
+      
+      activeAlarms.forEach(alarmStr => {
+        const a = JSON.parse(alarmStr);
+        
+        const banner = document.createElement('div');
+        banner.className = `banner ${a.key === 'LOW_BATTERY' ? 'amber' : ''}`;
+        
+        const icon = document.createElement('span');
+        icon.className = 'banner-icon';
+        icon.textContent = '⚠️';
+        
+        const text = document.createElement('div');
+        text.innerHTML = `<strong>[ALARM]</strong> ${a.msg}`;
+        
+        banner.appendChild(icon);
+        banner.appendChild(text);
+        container.appendChild(banner);
+      });
+    }
+  </script>
+</body>
+</html>
